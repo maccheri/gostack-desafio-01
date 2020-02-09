@@ -5,6 +5,13 @@ const app = express();
 app.use(express.json());
 
 const projects = [{ id: '1', title: 'teste', tasks: [] }];
+let requestsCount = 0;
+
+app.use((req, res, next) => {
+  requestsCount++;
+  console.log('Number of requests made: ', requestsCount);
+  return next();
+});
 
 app.get('/projects', (req, res) => {
   return res.json(projects);
