@@ -13,11 +13,32 @@ app.use((req, res, next) => {
   return next();
 });
 
+function checkProjectExists(req, res, next) {
+  const { id } = req.params;
+
+  const selectedProject = projects.find((project) => project.id === id);
+  if (!selectedProject) {
+    return res.status(500).send(`Projeto com id ${id} não encontrado.`);
+  }
+  req.project = selectedProject;
+  return next();
+}
+
+function canAddProject(req, res, next) {
+  const { id } = req.body;
+
+  const hasProjectWithSameId = projects.find((project) => project.id === id);
+  if (hasProjectWithSameId) {
+    return res.status(500).send(`Projeto com id ${id} já existe.`);
+  }
+  return next();
+}
+
 app.get('/projects', (req, res) => {
   return res.json(projects);
 });
 
-app.post('/projects', (req, res) => {
+app.post('/projects', canAddProject, (req, res) => {
   const { id, title } = req.body;
 
   projects.push({
@@ -28,38 +49,31 @@ app.post('/projects', (req, res) => {
   return res.send('Projeto adicionado com sucesso');
 });
 
-app.put('/projects/:id', (req, res) => {
-  const { id } = req.params;
+app.put('/projects/:id', checkProjectExists, (req, res) => {
   const { title } = req.body;
+  const { project } = req;
 
-  const selectedProject = projects.find((project) => project.id === id);
-  if (selectedProject) {
-    selectedProject.title = title;
+  project.title = title;
 
-    res.json(selectedProject);
-  }
-  res.status(500).send(`Projeto com id ${id} não encontrado`);
+  res.json(project);
 });
 
-app.delete('/projects/:id', (req, res) => {
+app.delete('/projects/:id', checkProjectExists, (req, res) => {
   const { id } = req.params;
 
-  projects.splice(id, 1);
+  const removeIndex = projects.map((project) => project.id).indexOf(id);
+  projects.splice(removeIndex, 1);
 
   return res.send('Projeto deletado com sucesso!');
 });
 
-app.post('/projects/:id/tasks', (req, res) => {
-  const { id } = req.params;
+app.post('/projects/:id/tasks', checkProjectExists, (req, res) => {
   const { title } = req.body;
+  const { project } = req;
 
-  const selectedProject = projects.find((project) => project.id === id);
-  if (selectedProject) {
-    selectedProject.tasks.push(title);
+  project.tasks.push(title);
 
-    res.json(selectedProject);
-  }
-  res.status(500).send(`Projeto com id ${id} não encontrado`);
+  res.json(project);
 });
 
 app.listen(3001);
