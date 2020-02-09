@@ -4,21 +4,19 @@ const app = express();
 
 app.use(express.json());
 
-const projects = [{ id: '1', title: 'teste', tasks: [] }];
-let requestsCount = 0;
+const projects = [];
 
-app.use((req, res, next) => {
-  requestsCount++;
-  console.log('Number of requests made: ', requestsCount);
+function logRequests(req, res, next) {
+  console.count('Number of requests');
   return next();
-});
+}
 
 function checkProjectExists(req, res, next) {
   const { id } = req.params;
 
   const selectedProject = projects.find((project) => project.id === id);
   if (!selectedProject) {
-    return res.status(500).send(`Projeto com id ${id} não encontrado.`);
+    return res.status(400).json({ error : `Projeto com id ${id} não encontrado.`});
   }
   req.project = selectedProject;
   return next();
@@ -34,6 +32,8 @@ function canAddProject(req, res, next) {
   return next();
 }
 
+app.use(logRequests);
+
 app.get('/projects', (req, res) => {
   return res.json(projects);
 });
@@ -44,6 +44,7 @@ app.post('/projects', canAddProject, (req, res) => {
   projects.push({
     id,
     title,
+    tasks: []
   });
 
   return res.send('Projeto adicionado com sucesso');
@@ -61,8 +62,8 @@ app.put('/projects/:id', checkProjectExists, (req, res) => {
 app.delete('/projects/:id', checkProjectExists, (req, res) => {
   const { id } = req.params;
 
-  const removeIndex = projects.map((project) => project.id).indexOf(id);
-  projects.splice(removeIndex, 1);
+  const projectIndex = projects.findIndex((project) => project.id === id);
+  projects.splice(projectIndex, 1);
 
   return res.send('Projeto deletado com sucesso!');
 });
